@@ -2,10 +2,12 @@
 
 # Required imports
 import os
-import sys
-import ast
+# import sys
+# import ast
+import numpy
+import cv2
 from PIL import Image
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, after_this_request
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -13,58 +15,30 @@ app = Flask(__name__)
 @app.route('/classifier', methods=['POST'])
 def classifier():
     try:
-        # targetUrl = request.json['targetUrl']
-        # objectData = request.data['objectData']
-        # app.logger.info("object data found:", objectData)
-        # print(request.data)
-        # byte_str = request.data
-        # dict_str = byte_str.decode("UTF-8")
-        # mydata = ast.literal_eval(dict_str)
-        #
-        # target_image = mydata['imageUrl']
-        # object_data = mydata['objectData']
-        # print("Image location:", target_image)
-        # print("Object data:", object_data)
+        @after_this_request
+        def add_header(response):
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response
 
-        return jsonify({"success": True}) , 200
+        #read image file string data
+        filestr = request.files['test_image'].read()
+        #convert string data to numpy array
+        npimg = numpy.frombuffer(filestr, numpy.uint8)
+        # convert numpy array to image
+        img = cv2.imdecode(npimg, cv2.IMREAD_UNCHANGED)
+
+        #image shape
+        print("image shape:", img.shape)
+        # my_response = jsonify(shape=img.shape)
+        # print(my_response)
+
+        return jsonify(imageshape=img.shape)
+
     except Exception as e:
         return f"An Error Occured: {e}"
 
-    # input_bucket = './images/'
-    # output_bucket = './output'
-    #
-    # if len(sys.argv) != 3:
-    #     print('Requires Usage: watermark.py \'image file\' \'logo file \'')
-    #     sys.exit()
-    # else:
-    #     input_image = sys.argv[1]
-    #     lgo = sys.argv[2]
-    #
-    # # Download logo
-    # logo = Image.open(lgo)
-    # logoWidth = logo.width
-    # logoHeight = logo.height
-    #
-    # # Grab photo name
-    # filename = str(input_image.replace(input_bucket, ''))
-    #
-    # # Download photo
-    # image = Image.open(input_image)
-    # imageWidth = image.width
-    # imageHeight = image.height
-    #
-    # # Modify and save photo
-    # try:
-    #     image.paste(logo, (int((imageWidth - logoWidth)/2), int((imageHeight - logoHeight)/2)), logo)
-    #     image.save(output_bucket + '/watermark_' + filename)
-    #     print('SUCCESS')
-    #
-    # except:
-    #     image.paste(logo, (int((imageWidth - logoWidth)/2), int((imageHeight - logoHeight)/2)), logo)
-    #     image.save(output_bucket + '/watermark_'  + filename)
-    #     print('FAILURE')
-    # return 'Hello World from Python Flask!'
 
 port = int(os.environ.get('PORT', 8080))
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True, host='0.0.0.0', port=port)
+    # app.run(debug=True, threaded=True, host='0.0.0.0', port=port)
+    app.run(debug=True, threaded=True, host='localhost', port=port)
